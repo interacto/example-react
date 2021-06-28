@@ -1,38 +1,146 @@
-.App {
-  text-align: center;
+.page {
+    font-family: 'Josefin Sans', sans-serif;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+h1 {
+    text-align: center;
+    min-height: 30px;
+    width: calc(100vw - (220px));
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.history {
+    max-height:100vh;
+    min-height:100vh;
+    width: 200px;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    overflow-x: hidden;
+    background-color: #d6d6d6;
+    border-right-style: solid;
+    border-width: medium;
+    overflow-y: auto;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+.header {
+    background-color: black;
+    min-height: 75px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border-bottom-style: solid;
 }
 
-.App-link {
-  color: #61dafb;
+.header h2 {
+    font-size: 25px;
+    text-align: center;
+    padding-top: 25px;
+    padding-bottom: 25px;
+    margin: 0;
+    color: white;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.button-undo-redo{
+    width: 50%;
+    min-height: 40px;
+    border-right-style: solid;
+    border-left-style: solid;
+    color: black;
+    background-color: white;
+    border-width: thin;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 20px;
+}
+
+.history-button-active{
+    width: 100%;
+    min-height: 35px;
+    border-right-style: none;
+    border-left-style: none;
+    color: black;
+    background-color: white;
+    border-width: thin;
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+.history-button-inactive{
+    width: 100%;
+    min-height: 35px;
+
+    border-right-style: none;
+    border-left-style: none;
+    color: lightgray;
+    background-color: gray;
+    border-width: thin;
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+.header button:disabled {
+    width: 50%;
+    min-height: 40px;
+    border-right-style: solid;
+    border-left-style: solid;
+    color: black;
+    background-color: lightgray;
+    border-width: thin;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 20px;
+}
+
+.main {
+    position: absolute;
+    left: 220px;
+    top: 0;
+    right: 20px;
+}
+
+.main button {
+    min-height: 35px;
+    color: black;
+    background-color: white;
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+.cards {
+    width: 33%;
+    border: 1px solid rgba(0,0,0,.03);
+    display: inline-block;
+    max-width: 100%;
+    margin: 4px;
+    background-color: white;
+    font-family: 'Josefin Sans', sans-serif;
+    color: black;
+
+    /* Makes the text on cards unselectable */
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+}
+
+.cards-block {
+    min-width: 33%;
+    min-height: 50px;
+    box-shadow: 0 2px 2px rgba(0,0,0,.24),0 0 2px rgba(0,0,0,.12);
+    margin: 20px;
+    width: 33%;
+    background-color: #d6d6d6;
+}
+
+.preview {
+    min-height: 30px;
+    min-width: 100px;
+    background-color: white;
+    position: absolute;
+    z-index: 999;
+    padding: 10px;
+    border-style: solid;
+    border-width: medium;
+}
+
+.preview-canvas {
+    height: 70px;
+    width: 70px;
 }
