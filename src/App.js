@@ -5,7 +5,10 @@ import React, {Component} from "react";
 import PropTypes from "prop-types";
 import {ClearText} from "./command/ClearText";
 import {SetText} from "./command/SetText";
-
+import {UndoHistoryReact} from "./command/UndoHistoryReact";
+import {HistoryGoBack} from "./command/HistoryGoBack";
+import {HistoryGoForward} from "./command/HistoryGoForward";
+import {HistoryBackToStart} from "./command/HistoryBackToStart";
 
 class App extends Component {
     static propTypes = {
@@ -18,8 +21,10 @@ class App extends Component {
         this.state = {
             txt: "foo", // Text stored by the undo/redo system
             textFieldValue: "foo", // Current text content of the text field
-            bindings: this.props.bindings
+            bindings: this.props.bindings,
         };
+
+        this.state.bindings.undoHistory = new UndoHistoryReact(this);
 
         this.onTextChange = this.onTextChange.bind(this);
 
@@ -27,6 +32,11 @@ class App extends Component {
         this.textArea = React.createRef();
         this.undoButton = React.createRef();
         this.redoButton = React.createRef();
+        this.undoButtonContainer = React.createRef();
+        this.redoButtonContainer = React.createRef();
+        this.baseStateButton = React.createRef();
+
+        this.undoButtons = [];
     }
 
     setupBindings() {
@@ -38,7 +48,7 @@ class App extends Component {
 
         bindings.buttonBinder()
             .on(this.clearTextButton.current)
-            .toProduce((i) => new ClearText(this))
+            .toProduce(() => new ClearText(this))
             .bind();
 
         bindings.textInputBinder()
@@ -50,7 +60,7 @@ class App extends Component {
 
         bindings.buttonBinder()
             .on(this.undoButton.current)
-            .toProduce(() => new Undo(bindings.undoHistory))
+            .toProduce(() => new Undo(this.state.bindings.undoHistory))
             .bind();
 
         bindings.buttonBinder()
@@ -58,7 +68,21 @@ class App extends Component {
             .toProduce(() => new Redo(bindings.undoHistory))
             .bind();
 
-        console.log('bindings done');
+        bindings.buttonBinder()
+            .on(this.baseStateButton.current)
+            .toProduce(() => new HistoryBackToStart(this.state.bindings.undoHistory))
+            .bind();
+
+        bindings.buttonBinder()
+            .onDynamic(this.undoButtonContainer.current)
+            .toProduce(i => new HistoryGoBack(Array.from(this.undoButtonContainer.current.childNodes).indexOf(i.widget), this.state.bindings.undoHistory))
+            .bind();
+
+        bindings.buttonBinder()
+            .onDynamic(this.redoButtonContainer.current)
+            .toProduce(i => new HistoryGoForward(Array.from(this.redoButtonContainer.current.childNodes).indexOf(i.widget), this.state.bindings.undoHistory))
+            .bind();
+
     }
 
     componentDidMount() {
@@ -66,10 +90,7 @@ class App extends Component {
     }
 
     onTextChange(evt) {
-        // this.props.dataService.txt = evt.target.value;
         this.setState({textFieldValue: evt.target.value});
-        // this.props.txt = evt.target.value;
-        console.log(this.state.txt);
     }
 
     render() {
@@ -83,23 +104,17 @@ class App extends Component {
                     </div>
 
                     <div className="buttons">
-                        <button className="history-button-active">Start</button>
+                        <button className="history-button-active" ref={this.baseStateButton}>Start</button>
 
-                        <div>
-                            {this.props.bindings.undoHistory.getUndo().map((elt, index) =>
-                                <div key={index}>
-                                    <button className="history-button-active">{elt.getUndoName()}</button>
-                                    <br/>
-                                </div>
+                        <div ref={this.undoButtonContainer}>
+                            {this.state.bindings.undoHistory.undos.map((elt, index) =>
+                                <button className="history-button-active" key={index} ref={(ref) => this.undoButtons[index] = ref}>{elt.getUndoName()}</button>
                             )}
                         </div>
 
-                        <div>
-                            {this.props.bindings.undoHistory.getRedo().map((elt, index) =>
-                                <div key={index}>
-                                    <button className="history-button-inactive">{elt.getUndoName()}</button>
-                                    <br/>
-                                </div>
+                        <div ref={this.redoButtonContainer}>
+                            {this.state.bindings.undoHistory.redos.slice().reverse().map((elt, index) =>
+                                <button className="history-button-inactive" key={index}>{elt.getUndoName()}</button>
                             )}
                         </div>
                     </div>

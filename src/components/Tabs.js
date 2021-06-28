@@ -59,9 +59,6 @@ class Tabs extends Component
                             );
                         }
                         return <div className={activeTabContent} key={child.props.label}>{child.props.children}</div>;
-
-                        // if (child.props.label !== currentTab) return undefined;
-                        // return child.props.children;
                     })}
                 </div>
             </div>

@@ -13,7 +13,6 @@ export class SetText extends UndoableCommand {
     }
 
     execution() {
-        console.log("new: " + this.newText);
         this.component.setState({txt: this.newText});
         this.component.setState({textFieldValue: this.newText});
     }

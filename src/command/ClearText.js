@@ -18,6 +18,7 @@ export class ClearText extends UndoableCommand {
 
     undo() {
         this.component.state.txt = this.memento;
+        this.component.state.textFieldValue = this.memento;
     }
 
     redo() {
