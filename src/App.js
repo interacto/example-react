@@ -9,6 +9,9 @@ import {UndoHistoryReact} from "./command/UndoHistoryReact";
 import {HistoryGoBack} from "./command/HistoryGoBack";
 import {HistoryGoForward} from "./command/HistoryGoForward";
 import {HistoryBackToStart} from "./command/HistoryBackToStart";
+import {DrawRect} from "./command/DrawRect";
+import {ChangeColor} from "./command/ChangeColor";
+import {DeleteElt} from "./command/DeleteElt";
 
 class App extends Component {
     static propTypes = {
@@ -35,8 +38,17 @@ class App extends Component {
         this.undoButtonContainer = React.createRef();
         this.redoButtonContainer = React.createRef();
         this.baseStateButton = React.createRef();
+        this.canvas = React.createRef();
 
         this.undoButtons = [];
+    }
+
+    componentDidMount() {
+        this.setupBindings();
+
+        const drawrect = new DrawRect(this.canvas.current);
+        drawrect.setCoords(10, 10, 300, 300);
+        drawrect.execute();
     }
 
     setupBindings() {
@@ -83,10 +95,24 @@ class App extends Component {
             .toProduce(i => new HistoryGoForward(Array.from(this.redoButtonContainer.current.childNodes).indexOf(i.widget), this.state.bindings.undoHistory))
             .bind();
 
-    }
+        bindings.tapBinder(3)
+            .toProduce(i => new ChangeColor(i.taps[0].currentTarget))
+            .onDynamic(this.canvas.current)
+            .when(i => i.taps[0].currentTarget !== this.canvas.nativeElement
+                && i.taps[0].currentTarget instanceof SVGElement)
+            // Does not continue to run if the first targeted node is not an SVG element
+            .strictStart()
+            .bind();
 
-    componentDidMount() {
-        this.setupBindings();
+        bindings.longTouchBinder(2000)
+            .toProduce(i => new DeleteElt(this.canvas.current, i.currentTarget))
+            .onDynamic(this.canvas.current)
+            .when(i => i.currentTarget !== this.canvas.current && i.currentTarget instanceof SVGElement)
+            // Prevents the context menu to pop-up
+            .preventDefault()
+            // Consumes the events before the multi-touch interaction and co use them
+            .stopImmediatePropagation()
+            .bind();
     }
 
     onTextChange(evt) {
@@ -140,12 +166,12 @@ class App extends Component {
                             </p>
                             <br/>
 
-                            <svg width="1000" height="600" style={{border: "1px solid black"}}>
+                            <svg width="1000" height="600" style={{border: "1px solid black"}} ref={this.canvas}>
                             </svg>
                         </div>
 
                         <div label="Drag the cards">
-                            Nothing to see here, this tab is <em>extinct</em>!
+
                         </div>
                     </Tabs>
 
