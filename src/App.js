@@ -152,12 +152,12 @@ class App extends Component {
 
         bindings.buttonBinder()
             .on(this.clearTextButton.current)
-            .toProduce(() => new ClearText(this))
+            .toProduce(() => new ClearText(this, 'txt', 'textFieldValue'))
             .bind();
 
         bindings.textInputBinder()
             .on(this.textArea.current)
-            .toProduce(() => new SetText(this))
+            .toProduce(() => new SetText(this, 'txt', 'textFieldValue'))
             .then((c, i) => c.text = i.widget.value)
             .end(() => this.forceUpdate())
             .bind();
