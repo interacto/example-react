@@ -4,6 +4,13 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import {BindingsImpl} from "interacto";
+import WebFont from 'webfontloader';
+
+WebFont.load({
+    google: {
+        families: ['Josefin Sans', 'sans-serif']
+    }
+});
 
 ReactDOM.render(
   <React.StrictMode>

@@ -12,6 +12,8 @@ import {HistoryBackToStart} from "./command/HistoryBackToStart";
 import {DrawRect} from "./command/DrawRect";
 import {ChangeColor} from "./command/ChangeColor";
 import {DeleteElt} from "./command/DeleteElt";
+import {Card} from "@material-ui/core";
+import {TransferArrayItemReact} from "./command/TransferArrayItemReact";
 
 class App extends Component {
     static propTypes = {
@@ -25,6 +27,21 @@ class App extends Component {
             txt: "foo", // Text stored by the undo/redo system
             textFieldValue: "foo", // Current text content of the text field
             bindings: this.props.bindings,
+            cards1: [{
+                title: 'card 1',
+                subTitle: 'The card 1',
+                text: 'Some text for card 1'
+            },
+            {
+                title: 'card 2',
+                subTitle: 'The card 2',
+                text: 'Some text for card 2'
+            }],
+            cards2: [{
+                title: 'card 3',
+                subTitle: 'The card 3',
+                text: 'Some text for card 3'
+            }],
         };
 
         this.state.bindings.undoHistory = new UndoHistoryReact(this);
@@ -39,6 +56,8 @@ class App extends Component {
         this.redoButtonContainer = React.createRef();
         this.baseStateButton = React.createRef();
         this.canvas = React.createRef();
+        this.cards1 = React.createRef();
+        this.cards2 = React.createRef();
 
         this.undoButtons = [];
     }
@@ -57,6 +76,79 @@ class App extends Component {
                 bindings,
             },
         } = this;
+
+        // This binder creates the command that allows the user to move a card from one list to another
+        bindings.dndBinder(true)
+            .on(window.document.body)
+            .toProduce(() => {
+                // The command is not executable until a proper target destination for the card has been selected by the user
+                // The -1 index prevents makes canExecute() return false and prevents Interacto from executing the command
+                return new TransferArrayItemReact(this, null, null, -1, 0, 'Drag card', true);
+            })
+            // Checks if the user picked a valid card, and a new list for the card as a destination
+            .when(i => {
+                // A valid card has to be selected in order to create the command
+                const card = i.src.target.closest('.cards');
+                return card !== null;
+            })
+            .first((c, i) => {
+                this.card = (i.src.target).closest('.cards');
+                this.sourceIndex = Array.prototype.indexOf.call(this.card.parentNode.children, this.card);
+                // Saves the initial state of the card's style to be able to restore it if the command can't be executed
+                this.mementoX = this.card.style.left;
+                this.mementoY = this.card.style.top;
+                this.mementoCSSPosition = this.card.style.position;
+                // Edits the card's style to make it movable visually
+                this.card.style.width = String(this.card.clientWidth) + 'px';
+                this.card.style.position = 'absolute';
+                this.card.style.zIndex = '999';
+            })
+            .then((c, i) => {
+                // Retrieves the position of the mouse on the page
+                let x = i.tgt.pageX;
+                let y = i.tgt.pageY;
+                // Prevents parts of the card from going outside of the document
+                if (i.tgt.pageX > window.document.body.clientWidth - this.card.clientWidth) {
+                    x = x - this.card.clientWidth - 5;
+                }
+                if (i.tgt.pageY > window.document.body.clientHeight - this.card.clientHeight) {
+                    y = y - this.card.clientHeight - 5;
+                }
+                // Moves the card visually
+                this.card.style.left = String(x) + 'px';
+                this.card.style.top = String(y) + 'px';
+
+                // Checks if the target selected is valid for the current card and makes the command executable if it is
+                const isCardPositionValid = (this.card.parentNode === this.cards1.current ?
+                    i.tgt.target === this.cards2.current : i.tgt.target === this.cards1.current);
+                if (!isCardPositionValid) {
+                    c.srcIndex = -1;
+                } else {
+                    c.srcIndex = this.sourceIndex;
+
+                    // Defines which array is the source and which one is the target
+                    const fromSrcToTgt = i.tgt.target === this.cards2.current && i.src.target !== this.cards1.current;
+                    if (fromSrcToTgt) {
+                        c.srcArray = 'cards1';
+                        c.tgtArray = 'cards2';
+                    } else {
+                        c.srcArray = 'cards2';
+                        c.tgtArray = 'cards1';
+                    }
+                }
+            })
+            // Resets the position of the card if the command is invalid or cancelled
+            .ifCannotExecute(() => {
+                this.card.style.left = this.mementoX;
+                this.card.style.top = this.mementoY;
+                this.card.style.position = this.mementoCSSPosition;
+            })
+            .cancel(() => {
+                this.card.style.left = this.mementoX;
+                this.card.style.top = this.mementoY;
+                this.card.style.position = this.mementoCSSPosition;
+            })
+            .bind();
 
         bindings.buttonBinder()
             .on(this.clearTextButton.current)
@@ -171,43 +263,42 @@ class App extends Component {
                         </div>
 
                         <div label="Drag the cards">
+                            <app-tab tabTitle="Drag the cards">
+                                <div className="cards-block" ref={this.cards1}>
+                                    {this.state.cards1.map(card =>
+                                        <Card className="cards" key={card.title}>
+                                            <mat-card-header>
+                                                <mat-card-title>{card.title}</mat-card-title>
+                                                <mat-card-subtitle>{card.subTitle}</mat-card-subtitle>
+                                            </mat-card-header>
+                                            <mat-card-content>
+                                                <p>
+                                                    {card.text}
+                                                </p>
+                                            </mat-card-content>
+                                        </Card>
+                                    )}
+                                </div>
 
+                                <div className="cards-block" ref={this.cards2}>
+                                    {this.state.cards2.map(card =>
+                                        <Card className="cards" key={card.title}>
+                                            <mat-card-header>
+                                                <mat-card-title>{card.title}</mat-card-title>
+                                                <mat-card-subtitle>{card.subTitle}</mat-card-subtitle>
+                                            </mat-card-header>
+                                            <mat-card-content>
+                                                <p>
+                                                    {card.text}
+                                                </p>
+                                            </mat-card-content>
+                                        </Card>
+                                    )}
+                                </div>
+                            </app-tab>
                         </div>
                     </Tabs>
-
-                    {/*<Tabs>*/}
-                    {/*    /!*<app-tab tabTitle="Drag the cards">*!/*/}
-                    {/*    /!*    <div class="cards-block">*!/*/}
-                    {/*    /!*        <mat-card>*!/*/}
-                    {/*    /!*            <mat-card-header>*!/*/}
-                    {/*    /!*                <mat-card-title>card title</mat-card-title>*!/*/}
-                    {/*    /!*                <mat-card-subtitle>subTitle</mat-card-subtitle>*!/*/}
-                    {/*    /!*            </mat-card-header>*!/*/}
-                    {/*    /!*            <mat-card-content>*!/*/}
-                    {/*    /!*                <p>*!/*/}
-                    {/*    /!*                    text*!/*/}
-                    {/*    /!*                </p>*!/*/}
-                    {/*    /!*            </mat-card-content>*!/*/}
-                    {/*    /!*        </mat-card>*!/*/}
-                    {/*    /!*    </div>*!/*/}
-
-                    {/*    /!*    <div class="cards-block">*!/*/}
-                    {/*    /!*    <mat-card>*!/*/}
-                    {/*    /!*        <mat-card-header>*!/*/}
-                    {/*    /!*            <mat-card-title>title</mat-card-title>*!/*/}
-                    {/*    /!*            <mat-card-subtitle>subTitle</mat-card-subtitle>*!/*/}
-                    {/*    /!*        </mat-card-header>*!/*/}
-                    {/*    /!*        <mat-card-content>*!/*/}
-                    {/*    /!*            <p>*!/*/}
-                    {/*    /!*                text*!/*/}
-                    {/*    /!*            </p>*!/*/}
-                    {/*    /!*        </mat-card-content>*!/*/}
-                    {/*    /!*    </mat-card>*!/*/}
-                    {/*    /!*    </div>*!/*/}
-                    {/*    /!*</app-tab>*!/*/}
-                    {/*</Tabs>*/}
                 </div>
-
             </div>
         );
     }
