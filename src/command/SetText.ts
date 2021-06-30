@@ -1,46 +1,45 @@
 import {UndoableCommand} from 'interacto';
+import {Component} from 'react';
 
 export class SetText extends UndoableCommand {
-    constructor(component, txt, textFieldValue) {
+    private memento: string = '';
+
+    public constructor(private component: Component, private txt: keyof Readonly<{}>, private textFieldValue: keyof Readonly<{}>, private newText?: string) {
         super();
-        this.memento = "";
-        this.component = component;
         this.newText = "";
-        this.txt = txt;
-        this.textFieldValue = textFieldValue;
     }
 
-    createMemento() {
+    protected createMemento() {
         this.memento = this.component.state[this.txt];
     }
 
-    execution() {
+    protected execution() {
         this.component.setState({[this.txt]: this.newText});
         this.component.setState({[this.textFieldValue]: this.newText});
     }
 
-    canExecute() {
+    public canExecute() {
         return this.newText !== undefined;
     }
 
-    set text(txt) {
+    public set text(txt: string) {
         this.newText = txt;
     }
 
-    undo() {
+    public undo() {
         this.component.setState({[this.txt]: this.memento});
         this.component.setState({[this.textFieldValue]: this.memento});
     }
 
-    redo() {
+    public redo() {
         this.execution();
     }
 
-    getUndoName() {
+    public getUndoName() {
         return 'Set text';
     }
 
-    getVisualSnapshot() {
+    public getVisualSnapshot() {
       return this.newText;
     }
 }

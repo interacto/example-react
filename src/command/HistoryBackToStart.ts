@@ -1,13 +1,12 @@
-import {CommandBase} from 'interacto';
+import {CommandBase, UndoHistory} from 'interacto';
 
 export class HistoryBackToStart extends CommandBase {
 
-  constructor(undoHistory) {
+  constructor(private undoHistory: UndoHistory) {
     super();
-    this.undoHistory = undoHistory;
   }
 
-  execution() {
+  protected execution(): void {
     while (this.undoHistory.getUndo().length > 0) {
       this.undoHistory.undo();
     }

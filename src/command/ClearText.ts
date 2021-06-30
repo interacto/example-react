@@ -1,33 +1,32 @@
 import {UndoableCommand} from 'interacto';
+import {Component} from 'react';
 
 export class ClearText extends UndoableCommand {
-    constructor(component, text, textFieldValue) {
+    private memento: string = '';
+
+    public constructor(private component: Component, private readonly text: keyof Readonly<{}>, private readonly textFieldValue: keyof Readonly<{}>) {
         super();
-        this.memento = "";
-        this.component = component;
-        this.text = text;
-        this.textFieldValue = textFieldValue;
     }
 
-    createMemento() {
+    protected createMemento() {
         this.memento = this.component.state[this.text];
     }
 
-    execution() {
+    protected execution() {
         this.component.setState({[this.textFieldValue]: ''});
         this.component.setState({[this.text]: ''});
     }
 
-    undo() {
+    public undo() {
         this.component.setState({[this.text]: this.memento});
         this.component.setState({[this.textFieldValue]: this.memento});
     }
 
-    redo() {
+    public redo() {
         this.execution();
     }
 
-    getUndoName() {
+    public getUndoName() {
         return 'Clear text';
     }
 }

@@ -1,9 +1,14 @@
 import {Component} from "react";
 import PropTypes from "prop-types";
-import {activeTab} from "./Tab.module.css";
-import {inactiveTab} from "./Tab.module.css";
+import styles from "./Tab.module.css";
 
-class Tab extends Component {
+type MyProps = {
+    label: string;
+    currentTab: string;
+    onClick: (label: string) => void;
+};
+
+class Tab extends Component<MyProps> {
     static propTypes = {
         currentTab: PropTypes.string.isRequired,
         label: PropTypes.string.isRequired,
@@ -27,11 +32,11 @@ class Tab extends Component {
         return (
             <li>
                 { currentTab === label ?
-                    <button className={activeTab} onClick={onClick}>
+                    <button className={styles.activeTab} onClick={onClick}>
                         {label}
                     </button>
                     :
-                    <button className={inactiveTab} onClick={onClick}>
+                    <button className={styles.inactiveTab} onClick={onClick}>
                         {label}
                     </button>
                 }

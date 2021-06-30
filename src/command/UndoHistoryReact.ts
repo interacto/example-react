@@ -13,10 +13,23 @@
  */
 
 import {Subject} from "rxjs";
-import {peek, UndoHistory} from "interacto";
+import type {Observable} from "rxjs";
+import {peek, Undoable, UndoHistory} from 'interacto';
+import {Component} from 'react';
 
 export class UndoHistoryReact extends UndoHistory {
-    constructor(component) {
+    private readonly undos: Array<Undoable>;
+    private readonly redos: Array<Undoable>;
+    private sizeMax: number;
+    private readonly undoPublisher: Subject<Undoable | undefined>;
+    private readonly redoPublisher: Subject<Undoable | undefined>;
+
+    private bindingsKey: keyof Readonly<{}> = 'bindings' as keyof Readonly<{}>;
+    private undoHistoryKey: keyof Readonly<{}> = 'undoHistory' as keyof Readonly<{}>;
+    private undosKey: keyof Readonly<{}> = 'undos' as keyof Readonly<{}>;
+    private redosKey: keyof Readonly<{}> = 'redos' as keyof Readonly<{}>;
+
+    constructor(private component: Component) {
         super();
         this.sizeMax = 0;
         this.undos = [];
@@ -27,48 +40,48 @@ export class UndoHistoryReact extends UndoHistory {
         this.component = component;
     }
 
-    undosObservable() {
+    public undosObservable(): Observable<Undoable | undefined> {
         return this.undoPublisher;
     }
 
-    redosObservable() {
+    public redosObservable(): Observable<Undoable | undefined> {
         return this.redoPublisher;
     }
 
-    clear() {
+    public clear(): void {
         if (this.undos.length > 0) {
             const newState = Object.assign({}, this.component.state);
-            newState.bindings.undoHistory.undos = [];
+            (newState[this.bindingsKey][this.undoHistoryKey][this.undosKey] as Array<Undoable>) = [];
             this.component.setState(newState);
             this.undoPublisher.next(undefined);
         }
         this.clearRedo();
     }
 
-    clearRedo() {
-        if (this.undos.length > 0) {
+    private clearRedo(): void {
+        if (this.redos.length > 0) {
             const newState = Object.assign({}, this.component.state);
-            newState.bindings.undoHistory.redos = [];
+            (newState[this.bindingsKey][this.undoHistoryKey][this.redosKey] as Array<Undoable>) = [];
             this.component.setState(newState);
             this.redoPublisher.next(undefined);
         }
     }
 
-    add(undoable) {
+    public add(undoable: Undoable): void {
         if (this.sizeMax > 0) {
             if (this.undos.length === this.sizeMax) {
                 const newState = Object.assign({}, this.component.state);
                 const newUndos = this.undos.slice();
                 newUndos.shift();
-                newState.bindings.undoHistory.undos = newUndos;
+                (newState[this.bindingsKey][this.undoHistoryKey][this.undosKey] as Array<Undoable>) = newUndos;
                 this.component.setState(newState);
             }
             const newUndos = this.undos.slice();
             newUndos.push(undoable);
 
             const newState = Object.assign({}, this.component.state);
-            newState.bindings.undoHistory.undos = newUndos;
-            newState.bindings.undoHistory.redos = [];
+            (newState[this.bindingsKey][this.undoHistoryKey][this.undosKey] as Array<Undoable>) = newUndos;
+            (newState[this.bindingsKey][this.undoHistoryKey][this.redosKey] as Array<Undoable>) = [];
             this.component.setState(newState);
 
             this.undoPublisher.next(undoable);
@@ -76,7 +89,7 @@ export class UndoHistoryReact extends UndoHistory {
         }
     }
 
-    undo() {
+    public undo(): void {
         const newUndos = this.undos.slice();
         const undoable = newUndos.pop();
 
@@ -84,10 +97,10 @@ export class UndoHistoryReact extends UndoHistory {
             undoable.undo();
 
             const newState = Object.assign({}, this.component.state);
-            newState.bindings.undoHistory.undos = newUndos;
+            (newState[this.bindingsKey][this.undoHistoryKey][this.undosKey] as Array<Undoable>) = newUndos;
             const newRedos = this.redos.slice();
             newRedos.push(undoable);
-            newState.bindings.undoHistory.redos = newRedos;
+            (newState[this.bindingsKey][this.undoHistoryKey][this.redosKey] as Array<Undoable>) = newRedos;
             this.component.setState(newState);
 
             this.undoPublisher.next(this.getLastUndo());
@@ -95,7 +108,7 @@ export class UndoHistoryReact extends UndoHistory {
         }
     }
 
-    redo() {
+    public redo(): void {
         const newRedos = this.redos.slice();
         const undoable = newRedos.pop();
 
@@ -103,10 +116,10 @@ export class UndoHistoryReact extends UndoHistory {
             undoable.redo();
 
             const newState = Object.assign({}, this.component.state);
-            newState.bindings.undoHistory.redos = newRedos;
+            (newState[this.bindingsKey][this.undoHistoryKey][this.redosKey] as Array<Undoable>) = newRedos;
             const newUndos = this.undos.slice();
             newUndos.push(undoable);
-            newState.bindings.undoHistory.undos = newUndos;
+            (newState[this.bindingsKey][this.undoHistoryKey][this.undosKey] as Array<Undoable>) = newUndos;
             this.component.setState(newState);
 
             this.undoPublisher.next(this.getLastUndo());
@@ -114,35 +127,35 @@ export class UndoHistoryReact extends UndoHistory {
         }
     }
 
-    getLastUndoMessage() {
+    public getLastUndoMessage(): string | undefined {
         return peek(this.undos)?.getUndoName();
     }
 
-    getLastRedoMessage() {
+    public getLastRedoMessage(): string | undefined {
         return peek(this.redos)?.getUndoName();
     }
 
-    getLastOrEmptyUndoMessage() {
+    public getLastOrEmptyUndoMessage(): string {
         return this.getLastUndoMessage() ?? "";
     }
 
-    getLastOrEmptyRedoMessage() {
+    public getLastOrEmptyRedoMessage(): string {
         return this.getLastRedoMessage() ?? "";
     }
 
-    getLastUndo() {
+    public getLastUndo(): Undoable | undefined {
         return peek(this.undos);
     }
 
-    getLastRedo() {
+    public getLastRedo(): Undoable | undefined {
         return peek(this.redos);
     }
 
-    getSizeMax() {
+    public getSizeMax(): number {
         return this.sizeMax;
     }
 
-    setSizeMax(max) {
+    public setSizeMax(max: number): void {
         if (max >= 0) {
             const newUndos = this.undos.slice();
             const removed = newUndos.splice(0, this.undos.length - max);
@@ -151,16 +164,16 @@ export class UndoHistoryReact extends UndoHistory {
             }
             this.sizeMax = max;
             const newState = Object.assign({}, this.component.state);
-            newState.bindings.undoHistory.undos = newUndos;
+            (newState[this.bindingsKey][this.undoHistoryKey][this.undosKey] as Array<Undoable>) = newUndos;
             this.component.setState(newState);
         }
     }
 
-    getUndo() {
+    public getUndo(): ReadonlyArray<Undoable> {
         return this.undos;
     }
 
-    getRedo() {
+    public getRedo(): ReadonlyArray<Undoable> {
         return this.redos;
     }
 }

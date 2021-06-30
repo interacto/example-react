@@ -2,25 +2,23 @@ import {UndoableCommand} from 'interacto';
 
 export class DeleteElt extends UndoableCommand {
 
-  constructor(svgDoc, svgElt) {
+  public constructor(private readonly svgDoc: SVGSVGElement, private readonly svgElt: SVGElement) {
     super();
-    this.svgDoc = svgDoc;
-    this.svgElt = svgElt;
   }
 
-  execution() {
+  protected execution(): void {
     this.redo();
   }
 
-  getUndoName() {
+  public getUndoName(): string {
     return 'Delete SVG element';
   }
 
-  redo() {
+  public redo(): void {
     this.svgDoc.removeChild(this.svgElt);
   }
 
-  undo() {
+  public undo(): void {
     this.svgDoc.appendChild(this.svgElt);
   }
 }
