@@ -1,5 +1,4 @@
 import {Component} from "react";
-import PropTypes from "prop-types";
 import Tab from "./Tab";
 import styles from "./Tabs.module.css"
 
@@ -9,10 +8,6 @@ type MyState= {
 
 class Tabs extends Component<any, MyState>
 {
-    static propTypes = {
-        children: PropTypes.instanceOf(Array).isRequired,
-    }
-
     constructor(props: {} | Readonly<{}>)
     {
         super(props);

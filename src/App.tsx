@@ -13,6 +13,9 @@ import {ChangeColor} from "./command/ChangeColor";
 import {DeleteElt} from "./command/DeleteElt";
 import {Card} from "@material-ui/core";
 import {TransferArrayItemReact} from "./command/TransferArrayItemReact";
+import {DisplayPreview} from "./command/DisplayPreview";
+import {HidePreview} from "./command/HidePreview";
+import {MovePreview} from "./command/MovePreview";
 
 type MyCard = {
     title: string,
@@ -40,6 +43,7 @@ class App extends Component<any, AppState> {
     private canvas: React.RefObject<SVGSVGElement> = React.createRef();
     private cards1: React.RefObject<HTMLDivElement> = React.createRef();
     private cards2: React.RefObject<HTMLDivElement> = React.createRef();
+    private preview: React.RefObject<HTMLDivElement> = React.createRef();
     private undoButtons: Array<HTMLButtonElement> = [];
 
     // For the card drag-and-drop
@@ -82,6 +86,8 @@ class App extends Component<any, AppState> {
         const drawrect = new DrawRect(this.canvas.current!);
         drawrect.setCoords(10, 10, 300, 300);
         drawrect.execute();
+
+        this.preview.current!.style.display = 'none';
     }
 
     setupBindings() {
@@ -225,6 +231,42 @@ class App extends Component<any, AppState> {
             // Consumes the events before the multi-touch interaction and co use them
             .stopImmediatePropagation()
             .bind();
+
+        // Command previews
+
+        // Displays command previews for undo buttons
+
+        bindings.mouseoverBinder(false)
+            .onDynamic(this.undoButtonContainer.current!)
+            .toProduce(i => new DisplayPreview(
+                this.state.bindings.undoHistory.getUndo()[Array.from(this.undoButtonContainer.current!.childNodes).indexOf(i.target! as HTMLButtonElement)],
+                this.preview.current!))
+            .bind();
+
+        // Displays command previews for redo buttons
+        bindings.mouseoverBinder(false)
+            .onDynamic(this.redoButtonContainer.current!)
+            .toProduce(i => new DisplayPreview(
+                this.state.bindings.undoHistory.getRedo()[
+                this.state.bindings.undoHistory.getRedo().length
+                - Array.from(this.redoButtonContainer.current!.childNodes).indexOf(i.target! as HTMLButtonElement)
+                - 1],
+                this.preview.current!))
+            .bind();
+
+        // Hides command previews for undo and redo buttons
+        bindings.mouseoutBinder(false)
+            .onDynamic(this.undoButtonContainer.current!)
+            .onDynamic(this.redoButtonContainer.current!)
+            .toProduce(() => new HidePreview(this.preview.current!))
+            .bind();
+
+        // Moves command previews to the mouse's position for undo and redo buttons
+        bindings.mousemoveBinder()
+            .onDynamic(this.undoButtonContainer.current!)
+            .onDynamic(this.redoButtonContainer.current!)
+            .toProduce(i => new MovePreview(this.preview.current!, i.pageX, i.pageY))
+            .bind();
     }
 
     onTextChange(evt: ChangeEvent): void {
@@ -234,6 +276,12 @@ class App extends Component<any, AppState> {
     render() {
         return (
             <div>
+                <div className="preview" ref={this.preview}>
+                    <p></p>
+                    <svg className="preview-canvas">
+                    </svg>
+                </div>
+
                 <div className="history">
                     <div className="header">
                         <h2>HISTORY</h2>
@@ -260,7 +308,6 @@ class App extends Component<any, AppState> {
 
                 <div className="main">
                     <h1>An Interacto-React app</h1>
-
                     <Tabs>
                         <div title="Type some text">
                             <textarea value={this.state.textFieldValue} onChange={this.onTextChange} ref={this.textArea}/>

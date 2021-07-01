@@ -1,5 +1,4 @@
 import {Component} from "react";
-import PropTypes from "prop-types";
 import styles from "./Tab.module.css";
 
 type MyProps = {
@@ -9,12 +8,6 @@ type MyProps = {
 };
 
 class Tab extends Component<MyProps> {
-    static propTypes = {
-        currentTab: PropTypes.string.isRequired,
-        label: PropTypes.string.isRequired,
-        onClick: PropTypes.func.isRequired,
-    };
-
     onClick = () => {
         const { label, onClick } = this.props;
         onClick(label);
