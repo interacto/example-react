@@ -1,10 +1,10 @@
 import './App.css';
 import Tabs from "./components/Tabs";
-import {Bindings, BindingsImpl, Redo, Undo} from 'interacto';
+import FunctionalComponentDemo from "./components/FunctionalComponentDemo";
+import {Bindings, Redo, Undo} from 'interacto';
 import React, {ChangeEvent, Component} from 'react';
 import {ClearText} from "./command/ClearText";
 import {SetText} from "./command/SetText";
-import {UndoHistoryReact} from "./command/UndoHistoryReact";
 import {HistoryGoBack} from "./command/HistoryGoBack";
 import {HistoryGoForward} from "./command/HistoryGoForward";
 import {HistoryBackToStart} from "./command/HistoryBackToStart";
@@ -16,6 +16,7 @@ import {TransferArrayItemReact} from "./command/TransferArrayItemReact";
 import {DisplayPreview} from "./command/DisplayPreview";
 import {HidePreview} from "./command/HidePreview";
 import {MovePreview} from "./command/MovePreview";
+import {BindingsContext} from "./components/BindingsProvider";
 
 type MyCard = {
     title: string,
@@ -26,13 +27,11 @@ type MyCard = {
 export type AppState = {
     txt: string, // Text stored by the undo/redo system
     textFieldValue: string, // Current text content of the text field
-    bindings: Bindings,
     cards1: Array<MyCard>,
     cards2: Array<MyCard>,
 };
 
-
-class App extends Component<any, AppState> {
+class App extends Component<{ bindings: Bindings }, AppState> {
     private clearTextButton: React.RefObject<HTMLButtonElement> = React.createRef();
     private textArea: React.RefObject<HTMLTextAreaElement> = React.createRef();
     private undoButton: React.RefObject<HTMLButtonElement> = React.createRef();
@@ -53,13 +52,15 @@ class App extends Component<any, AppState> {
     public card: HTMLElement | undefined = undefined;
     public sourceIndex: number = 0;
 
-    constructor(props: any) {
-        super(props);
+    static contextType = BindingsContext;
+    private bindings: Bindings;
 
+    constructor(props: { bindings: Bindings }) {
+        super(props);
+        this.bindings = props.bindings;
         this.state = {
             txt: "foo",
             textFieldValue: "foo",
-            bindings: new BindingsImpl(new UndoHistoryReact(this)),
             cards1: [{
                 title: 'card 1',
                 subTitle: 'The card 1',
@@ -81,6 +82,9 @@ class App extends Component<any, AppState> {
     }
 
     componentDidMount() {
+        // How to access bindings by using Context instead of props:
+        // (not available in the constructor)
+        // this.bindings = this.context.bindings as Bindings;
         this.setupBindings();
 
         const drawrect = new DrawRect(this.canvas.current!);
@@ -91,14 +95,8 @@ class App extends Component<any, AppState> {
     }
 
     setupBindings() {
-        const {
-            state: {
-                bindings,
-            },
-        } = this;
-
         // This binder creates the command that allows the user to move a card from one list to another
-        bindings.dndBinder(true)
+        this.bindings.dndBinder(true)
             .on(window.document.body)
             .toProduce(() => {
                 // The command is not executable until a proper target destination for the card has been selected by the user
@@ -176,44 +174,44 @@ class App extends Component<any, AppState> {
             })
             .bind();
 
-        bindings.buttonBinder()
+        this.context.bindings.buttonBinder()
             .on(this.clearTextButton.current!)
             .toProduce(() => new ClearText(this, 'txt' as keyof Readonly<{}>, 'textFieldValue' as keyof Readonly<{}>))
             .bind();
 
-        bindings.textInputBinder()
+        (this.context.bindings as Bindings).textInputBinder()
             .on(this.textArea.current!)
             .toProduce(() => new SetText(this, 'txt' as keyof Readonly<{}>, 'textFieldValue' as keyof Readonly<{}>))
             .then((c, i) => c.text = (i.widget as HTMLInputElement).value)
             .end(() => this.forceUpdate())
             .bind();
 
-        bindings.buttonBinder()
+        this.bindings.buttonBinder()
             .on(this.undoButton.current!)
-            .toProduce(() => new Undo(this.state.bindings.undoHistory))
+            .toProduce(() => new Undo(this.context.bindings.undoHistory))
             .bind();
 
-        bindings.buttonBinder()
+        this.bindings.buttonBinder()
             .on(this.redoButton.current!)
-            .toProduce(() => new Redo(bindings.undoHistory))
+            .toProduce(() => new Redo(this.bindings.undoHistory))
             .bind();
 
-        bindings.buttonBinder()
+        this.bindings.buttonBinder()
             .on(this.baseStateButton.current!)
-            .toProduce(() => new HistoryBackToStart(this.state.bindings.undoHistory))
+            .toProduce(() => new HistoryBackToStart(this.bindings.undoHistory))
             .bind();
 
-        bindings.buttonBinder()
+        this.bindings.buttonBinder()
             .onDynamic(this.undoButtonContainer.current!)
-            .toProduce(i => new HistoryGoBack(Array.from(this.undoButtonContainer.current!.childNodes).indexOf(i.widget!), this.state.bindings.undoHistory))
+            .toProduce(i => new HistoryGoBack(Array.from(this.undoButtonContainer.current!.childNodes).indexOf(i.widget!), this.bindings.undoHistory))
             .bind();
 
-        bindings.buttonBinder()
+        this.bindings.buttonBinder()
             .onDynamic(this.redoButtonContainer.current!)
-            .toProduce(i => new HistoryGoForward(Array.from(this.redoButtonContainer.current!.childNodes).indexOf(i.widget!), this.state.bindings.undoHistory))
+            .toProduce(i => new HistoryGoForward(Array.from(this.redoButtonContainer.current!.childNodes).indexOf(i.widget!), this.bindings.undoHistory))
             .bind();
 
-        bindings.tapBinder(3)
+        this.bindings.tapBinder(3)
             .toProduce(i => new ChangeColor(i.taps[0].currentTarget  as SVGElement))
             .onDynamic(this.canvas.current!)
             .when(i => i.taps[0].currentTarget !== this.canvas.current
@@ -222,7 +220,7 @@ class App extends Component<any, AppState> {
             .strictStart()
             .bind();
 
-        bindings.longTouchBinder(2000)
+        this.bindings.longTouchBinder(2000)
             .toProduce(i => new DeleteElt(this.canvas.current!, i.currentTarget  as SVGElement))
             .onDynamic(this.canvas.current!)
             .when(i => i.currentTarget !== this.canvas.current && i.currentTarget instanceof SVGElement)
@@ -236,33 +234,33 @@ class App extends Component<any, AppState> {
 
         // Displays command previews for undo buttons
 
-        bindings.mouseoverBinder(false)
+        this.bindings.mouseoverBinder(false)
             .onDynamic(this.undoButtonContainer.current!)
             .toProduce(i => new DisplayPreview(
-                this.state.bindings.undoHistory.getUndo()[Array.from(this.undoButtonContainer.current!.childNodes).indexOf(i.target! as HTMLButtonElement)],
+                this.bindings.undoHistory.getUndo()[Array.from(this.undoButtonContainer.current!.childNodes).indexOf(i.target! as HTMLButtonElement)],
                 this.preview.current!))
             .bind();
 
         // Displays command previews for redo buttons
-        bindings.mouseoverBinder(false)
+        this.bindings.mouseoverBinder(false)
             .onDynamic(this.redoButtonContainer.current!)
             .toProduce(i => new DisplayPreview(
-                this.state.bindings.undoHistory.getRedo()[
-                this.state.bindings.undoHistory.getRedo().length
+                this.bindings.undoHistory.getRedo()[
+                this.bindings.undoHistory.getRedo().length
                 - Array.from(this.redoButtonContainer.current!.childNodes).indexOf(i.target! as HTMLButtonElement)
                 - 1],
                 this.preview.current!))
             .bind();
 
         // Hides command previews for undo and redo buttons
-        bindings.mouseoutBinder(false)
+        this.bindings.mouseoutBinder(false)
             .onDynamic(this.undoButtonContainer.current!)
             .onDynamic(this.redoButtonContainer.current!)
             .toProduce(() => new HidePreview(this.preview.current!))
             .bind();
 
         // Moves command previews to the mouse's position for undo and redo buttons
-        bindings.mousemoveBinder()
+        this.bindings.mousemoveBinder()
             .onDynamic(this.undoButtonContainer.current!)
             .onDynamic(this.redoButtonContainer.current!)
             .toProduce(i => new MovePreview(this.preview.current!, i.pageX, i.pageY))
@@ -293,13 +291,13 @@ class App extends Component<any, AppState> {
                         <button className="history-button-active" ref={this.baseStateButton}>Start</button>
 
                         <div ref={this.undoButtonContainer}>
-                            {this.state.bindings.undoHistory.getUndo().map((elt, index) =>
+                            {this.bindings.undoHistory.getUndo().map((elt, index) =>
                                 <button className="history-button-active" key={index} ref={(ref) => this.undoButtons[index] = ref as HTMLButtonElement}>{elt.getUndoName()}</button>
                             )}
                         </div>
 
                         <div ref={this.redoButtonContainer}>
-                            {this.state.bindings.undoHistory.getRedo().slice().reverse().map((elt, index) =>
+                            {this.bindings.undoHistory.getRedo().slice().reverse().map((elt, index) =>
                                 <button className="history-button-inactive" key={index}>{elt.getUndoName()}</button>
                             )}
                         </div>
@@ -314,6 +312,7 @@ class App extends Component<any, AppState> {
                             <br/>
                             <button className="clearTextButton" ref={this.clearTextButton}>Clear text</button>
                             <br/><br/>
+                            <FunctionalComponentDemo component={this} />
                         </div>
 
                         <div title="Create and edit rectangles">

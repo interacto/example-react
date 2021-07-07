@@ -4,6 +4,7 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import WebFont from 'webfontloader';
+import BindingsProvider, {BindingsContext} from "./components/BindingsProvider";
 
 WebFont.load({
     google: {
@@ -13,7 +14,15 @@ WebFont.load({
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+          <BindingsProvider>
+              {/*This pattern allows class-based components to access several contexts if needed.
+              Not necessary for functional components.*/}
+              <BindingsContext.Consumer>
+                  {(context) => (
+                      <App bindings={context.bindings}/>
+                  )}
+              </BindingsContext.Consumer>
+          </BindingsProvider>
   </React.StrictMode>,
   document.getElementById('root')
 );

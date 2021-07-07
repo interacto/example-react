@@ -15,7 +15,7 @@
 import {Subject} from "rxjs";
 import type {Observable} from "rxjs";
 import {peek, Undoable, UndoHistory} from 'interacto';
-import {Component} from 'react';
+import BindingsProvider from "../components/BindingsProvider";
 
 export class UndoHistoryReact extends UndoHistory {
     private readonly undos: Array<Undoable>;
@@ -24,12 +24,7 @@ export class UndoHistoryReact extends UndoHistory {
     private readonly undoPublisher: Subject<Undoable | undefined>;
     private readonly redoPublisher: Subject<Undoable | undefined>;
 
-    private bindingsKey: keyof Readonly<{}> = 'bindings' as keyof Readonly<{}>;
-    private undoHistoryKey: keyof Readonly<{}> = 'undoHistory' as keyof Readonly<{}>;
-    private undosKey: keyof Readonly<{}> = 'undos' as keyof Readonly<{}>;
-    private redosKey: keyof Readonly<{}> = 'redos' as keyof Readonly<{}>;
-
-    constructor(private component: Component) {
+    constructor(private component: BindingsProvider) {
         super();
         this.sizeMax = 0;
         this.undos = [];
@@ -51,7 +46,7 @@ export class UndoHistoryReact extends UndoHistory {
     public clear(): void {
         if (this.undos.length > 0) {
             const newState = Object.assign({}, this.component.state);
-            (newState[this.bindingsKey][this.undoHistoryKey][this.undosKey] as Array<Undoable>) = [];
+            ((newState.bindings.undoHistory as UndoHistoryReact).undos as Array<Undoable>) = [];
             this.component.setState(newState);
             this.undoPublisher.next(undefined);
         }
@@ -61,7 +56,7 @@ export class UndoHistoryReact extends UndoHistory {
     private clearRedo(): void {
         if (this.redos.length > 0) {
             const newState = Object.assign({}, this.component.state);
-            (newState[this.bindingsKey][this.undoHistoryKey][this.redosKey] as Array<Undoable>) = [];
+            ((newState.bindings.undoHistory as UndoHistoryReact).redos as Array<Undoable>) = [];
             this.component.setState(newState);
             this.redoPublisher.next(undefined);
         }
@@ -73,15 +68,15 @@ export class UndoHistoryReact extends UndoHistory {
                 const newState = Object.assign({}, this.component.state);
                 const newUndos = this.undos.slice();
                 newUndos.shift();
-                (newState[this.bindingsKey][this.undoHistoryKey][this.undosKey] as Array<Undoable>) = newUndos;
+                ((newState.bindings.undoHistory as UndoHistoryReact).undos as Array<Undoable>) = newUndos;
                 this.component.setState(newState);
             }
             const newUndos = this.undos.slice();
             newUndos.push(undoable);
 
             const newState = Object.assign({}, this.component.state);
-            (newState[this.bindingsKey][this.undoHistoryKey][this.undosKey] as Array<Undoable>) = newUndos;
-            (newState[this.bindingsKey][this.undoHistoryKey][this.redosKey] as Array<Undoable>) = [];
+            ((newState.bindings.undoHistory as UndoHistoryReact).undos as Array<Undoable>) = newUndos;
+            ((newState.bindings.undoHistory as UndoHistoryReact).redos as Array<Undoable>) = [];
             this.component.setState(newState);
 
             this.undoPublisher.next(undoable);
@@ -97,10 +92,10 @@ export class UndoHistoryReact extends UndoHistory {
             undoable.undo();
 
             const newState = Object.assign({}, this.component.state);
-            (newState[this.bindingsKey][this.undoHistoryKey][this.undosKey] as Array<Undoable>) = newUndos;
+            ((newState.bindings.undoHistory as UndoHistoryReact).undos as Array<Undoable>) = newUndos;
             const newRedos = this.redos.slice();
             newRedos.push(undoable);
-            (newState[this.bindingsKey][this.undoHistoryKey][this.redosKey] as Array<Undoable>) = newRedos;
+            ((newState.bindings.undoHistory as UndoHistoryReact).redos as Array<Undoable>) = newRedos;
             this.component.setState(newState);
 
             this.undoPublisher.next(this.getLastUndo());
@@ -116,10 +111,10 @@ export class UndoHistoryReact extends UndoHistory {
             undoable.redo();
 
             const newState = Object.assign({}, this.component.state);
-            (newState[this.bindingsKey][this.undoHistoryKey][this.redosKey] as Array<Undoable>) = newRedos;
+            ((newState.bindings.undoHistory as UndoHistoryReact).redos as Array<Undoable>) = newRedos;
             const newUndos = this.undos.slice();
             newUndos.push(undoable);
-            (newState[this.bindingsKey][this.undoHistoryKey][this.undosKey] as Array<Undoable>) = newUndos;
+            ((newState.bindings.undoHistory as UndoHistoryReact).undos as Array<Undoable>) = newUndos;
             this.component.setState(newState);
 
             this.undoPublisher.next(this.getLastUndo());
@@ -164,7 +159,7 @@ export class UndoHistoryReact extends UndoHistory {
             }
             this.sizeMax = max;
             const newState = Object.assign({}, this.component.state);
-            (newState[this.bindingsKey][this.undoHistoryKey][this.undosKey] as Array<Undoable>) = newUndos;
+            ((newState.bindings.undoHistory as UndoHistoryReact).undos as Array<Undoable>) = newUndos;
             this.component.setState(newState);
         }
     }
