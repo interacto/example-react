@@ -16,7 +16,6 @@ import {TransferArrayItemReact} from "./command/TransferArrayItemReact";
 import {DisplayPreview} from "./command/DisplayPreview";
 import {HidePreview} from "./command/HidePreview";
 import {MovePreview} from "./command/MovePreview";
-import {BindingsContext} from "./components/BindingsProvider";
 
 type MyCard = {
     title: string,
@@ -52,7 +51,9 @@ class App extends Component<{ bindings: Bindings }, AppState> {
     public card: HTMLElement | undefined = undefined;
     public sourceIndex: number = 0;
 
-    static contextType = BindingsContext;
+    // To use context instead of props
+    // static contextType = BindingsContext;
+
     private bindings: Bindings;
 
     constructor(props: { bindings: Bindings }) {
@@ -174,12 +175,12 @@ class App extends Component<{ bindings: Bindings }, AppState> {
             })
             .bind();
 
-        this.context.bindings.buttonBinder()
+        this.bindings.buttonBinder()
             .on(this.clearTextButton.current!)
             .toProduce(() => new ClearText(this, 'txt' as keyof Readonly<{}>, 'textFieldValue' as keyof Readonly<{}>))
             .bind();
 
-        (this.context.bindings as Bindings).textInputBinder()
+        this.bindings.textInputBinder()
             .on(this.textArea.current!)
             .toProduce(() => new SetText(this, 'txt' as keyof Readonly<{}>, 'textFieldValue' as keyof Readonly<{}>))
             .then((c, i) => c.text = (i.widget as HTMLInputElement).value)
