@@ -1,8 +1,8 @@
 import React, {Component, useContext} from "react";
-import {BindingsImpl} from "interacto";
+import {Bindings, BindingsImpl} from "interacto";
 import {UndoHistoryReact} from "../command/UndoHistoryReact";
 
-export const BindingsContext = React.createContext({bindings: new BindingsImpl()});
+export const BindingsContext = React.createContext({bindings: new BindingsImpl() as Bindings});
 
 /**
  * Equivalent to useContext(BindingsContext).
@@ -15,7 +15,7 @@ export const useBindings = () => {
 /**
  * Creates a Bindings object and provides it to child components through the Context API.
  */
-class BindingsProvider extends Component<any, { bindings: BindingsImpl }> {
+class BindingsProvider extends Component<any, { bindings: Bindings }> {
     constructor(props: any) {
         super(props);
 
